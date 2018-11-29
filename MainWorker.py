@@ -1,4 +1,4 @@
-import requests
+import requests, asyncio, lxml
 import bs4 as beautifulSoup
 
 
@@ -19,7 +19,7 @@ def Scraper(search_term, search_location):
 
     for string in search_string_list:
         search = requests.get(search_string)
-        search_soup = beautifulSoup.BeautifulSoup(search.content, 'html.parser')
+        search_soup = beautifulSoup.BeautifulSoup(search.content, "lxml")
         soup_urls = search_soup.find_all(attrs={'data-tn-element': 'jobTitle'})
 
         #Get the links to next pages from the bottom. TODO//Make compatible for many searches. Cross check the links on each page
@@ -45,7 +45,7 @@ def Scraper(search_term, search_location):
 
         for url in url_string_list:
             page = requests.get(url)
-            job_soup = beautifulSoup.BeautifulSoup(page.content, 'html.parser')
+            job_soup = beautifulSoup.BeautifulSoup(page.content, "lxml")
             job_description = job_soup.find(attrs={'class': 'jobsearch-JobComponent-description'})
             job_description = job_description.get_text()
             job_pages += " " + job_description
