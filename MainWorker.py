@@ -1,7 +1,22 @@
-import requests, asyncio, lxml
+import requests
 import bs4 as beautifulSoup
+from multiprocessing.dummy import Pool
+
+def ResultsFinder(search_string):
+    search = requests.get(search_string)
+    search_soup = beautifulSoup.BeautifulSoup(search.content, "lxml")
+    soup_urls = search_soup.find_all(attrs={'data-tn-element': 'jobTitle'})
+
+    return soup_urls
 
 
+def TextScraper(url):
+    page = requests.get(url)
+    job_soup = beautifulSoup.BeautifulSoup(page.content, "lxml")
+    job_description = job_soup.find(attrs={'class': 'jobsearch-JobComponent-description'})
+    job_description = job_description.get_text()
+
+    return job_description
 
 def Scraper(search_term, search_location):
     #Loads the search page into a soup object and creates a list of all links
@@ -17,40 +32,37 @@ def Scraper(search_term, search_location):
     job_pages = ""
 
 
-    for string in search_string_list:
-        search = requests.get(search_string)
-        search_soup = beautifulSoup.BeautifulSoup(search.content, "lxml")
-        soup_urls = search_soup.find_all(attrs={'data-tn-element': 'jobTitle'})
-
-        #Get the links to next pages from the bottom. TODO//Make compatible for many searches. Cross check the links on each page
-        # page_urls_soup = search_soup.find(attrs={'class': 'pagination'})
-        # page_urls = page_urls_soup.find_all('a')
-        # href_list = []
-        # for url in page_urls:
-        #     href = "https://www.indeed.co.uk" + url['href']
-        #     href_list.append(href)
-        #
-        # href_list = list(set(href_list))
+    with Pool(3) as threads: soup_urls = threads.map(ResultsFinder, search_string_list)
 
 
 
-        url_string_list = []
 
-        for url in soup_urls:
+    #Get the links to next pages from the bottom. TODO//Make compatible for many searches. Cross check the links on each page
+    # page_urls_soup = search_soup.find(attrs={'class': 'pagination'})
+    # page_urls = page_urls_soup.find_all('a')
+    # href_list = []
+    # for url in page_urls:
+    #     href = "https://www.indeed.co.uk" + url['href']
+    #     href_list.append(href)
+    #
+    # href_list = list(set(href_list))
+
+
+
+    url_string_list = []
+
+    for url_set in soup_urls:
+        for url in url_set:
             url_string = "https://www.indeed.co.uk" + url['href']
             url_string_list.append(url_string)
-            print(url_string)
+
+
+    with Pool(60) as threads: job_description_list = threads.map(TextScraper, url_string_list)
 
 
 
-        for url in url_string_list:
-            page = requests.get(url)
-            job_soup = beautifulSoup.BeautifulSoup(page.content, "lxml")
-            job_description = job_soup.find(attrs={'class': 'jobsearch-JobComponent-description'})
-            job_description = job_description.get_text()
-            job_pages += " " + job_description
-
-
+    job_description = " "
+    job_pages = job_description.join(job_description_list)
 
     return job_pages
 
