@@ -51,13 +51,16 @@ def Scraper(search_term, search_location):
 
     url_string_list = []
 
+    n = 0
+
     for url_set in soup_urls:
         for url in url_set:
             url_string = "https://www.indeed.co.uk" + url['href']
             url_string_list.append(url_string)
+            n += 1
 
 
-    with Pool(60) as threads: job_description_list = threads.map(TextScraper, url_string_list)
+    with Pool(n) as threads: job_description_list = threads.map(TextScraper, url_string_list)
 
 
 
